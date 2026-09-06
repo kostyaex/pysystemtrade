@@ -103,6 +103,7 @@ class dataBlob(object):
             arctic=self._add_arctic_class,
             mongo=self._add_mongo_class,
             parquet=self._add_parquet_class,
+            bybit=self._add_bybit_class,
         )
 
         method_to_add_with = class_dict.get(prefix, None)
@@ -160,6 +161,22 @@ class dataBlob(object):
             class_name = get_class_name(class_object)
             msg = (
                 "Error %s couldn't evaluate %s(mongo_db=self.mongo_db) \
+                        This might be because import is missing\
+                         or arguments don't follow pattern"
+                % (str(e), class_name)
+            )
+            self._raise_and_log_error(msg)
+
+        return resolved_instance
+
+    def _add_bybit_class(self, class_object):
+        log = self._get_specific_logger(class_object)
+        try:
+            resolved_instance = class_object(log=log)
+        except Exception as e:
+            class_name = get_class_name(class_object)
+            msg = (
+                "Error '%s' couldn't evaluate %s(log=log) \
                         This might be because import is missing\
                          or arguments don't follow pattern"
                 % (str(e), class_name)
@@ -378,7 +395,9 @@ class dataBlob(object):
         return log_name
 
 
-source_dict = dict(arctic="db", mongo="db", csv="db", parquet="db", ib="broker")
+source_dict = dict(
+    arctic="db", mongo="db", csv="db", parquet="db", ib="broker", bybit="db"
+)
 
 
 def identifying_name(
