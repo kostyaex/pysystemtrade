@@ -1,0 +1,43 @@
+#YAML
+# ByBit perpetual futures system config
+#
+# Portfolio: BTC 25%, LINK 25%, XRP 25%, ETH 8.3%, SOL 8.3%, BNB 8.3%
+# Volatility target: 15% annual (conservative)
+# Instruments: only ByBit USDT perpetuals (codes ending _BYBIT)
+#
+percentage_vol_target: 15.0
+notional_trading_capital: 1000
+base_currency: "USD"
+
+instrument_weights:
+     BTC_BYBIT: 0.25
+     LINK_BYBIT: 0.25
+     XRP_BYBIT: 0.25
+     ETH_BYBIT: 0.083
+     SOL_BYBIT: 0.083
+     BNB_BYBIT: 0.083
+instrument_div_multiplier: 1.2 # было 1, поменял на 1.2 по рекомендации Qwen
+
+#
+# Trading rules
+#
+trading_rules:
+   ewmac8:
+      function: systems.provided.rules.ewmac.ewmac_forecast_with_defaults
+      data: data.daily_prices
+      other_args:
+          Lfast: 8
+          Lslow: 32
+      forecast_scalar: 5.3
+   ewmac32:
+      function: systems.provided.rules.ewmac.ewmac_forecast_with_defaults
+      data: data.daily_prices
+      other_args:
+          Lfast: 32
+          Lslow: 128
+      forecast_scalar: 2.65
+forecast_weights:
+     ewmac8: 0.50
+     ewmac32: 0.50
+forecast_div_multiplier: 1.1
+forecast_cap: 20.0
