@@ -9,6 +9,7 @@ dist
 build
 private
 restats
+data/futures/bybit/
 
 # Coverage reports
 .coverage

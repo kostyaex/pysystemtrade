@@ -588,6 +588,6 @@ ZINC_LME,Zinc - LME,25,USD,Metals,0,0,0,EMEA
 BTC_BYBIT,Bitcoin Perpetual ByBit,0.001,USD,Crypto,0,0.0008,0,ASIA
 ETH_BYBIT,Ethereum Perpetual ByBit,0.01,USD,Crypto,0,0.0008,0,ASIA
 SOL_BYBIT,Solana Perpetual ByBit,0.1,USD,Crypto,0,0.0008,0,ASIA
-LINK_BYBIT,Chainlink Perpetual ByBit,1.0,USD,Crypto,0,0.0008,0,ASIA
+LINK_BYBIT,Chainlink Perpetual ByBit,0.1,USD,Crypto,0,0.0008,0,ASIA
 XRP_BYBIT,XRP Perpetual ByBit,10.0,USD,Crypto,0,0.0008,0,ASIA
-BNB_BYBIT,BNB Perpetual ByBit,0.1,USD,Crypto,0,0.0008,0,ASIA
+BNB_BYBIT,BNB Perpetual ByBit,0.01,USD,Crypto,0,0.0008,0,ASIA
