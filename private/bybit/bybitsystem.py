@@ -16,7 +16,7 @@ def bybitsystem(data=None, config=None):
     Example of how to 'wrap' a complete ByBit system
     """
     if config is None:
-        config = Config("systems.provided.example.bybitconfig.yaml")
+        config = Config("private.bybit.bybitconfig.yaml")
     if data is None:
         data = bybitFuturesSimData()
 
