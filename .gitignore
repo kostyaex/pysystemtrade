@@ -10,6 +10,7 @@ build
 private
 restats
 data/futures/bybit/
+data/parquet/
 
 # Coverage reports
 .coverage
