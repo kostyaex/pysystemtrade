@@ -161,10 +161,14 @@ class mongoConnection(object):
         raw_index_information = copy(self.collection.index_information())
 
         if len(raw_index_information) == 0:
-            return []
+            return 0, [], []
 
         # '__id__' is always in index if there is data
         raw_index_information.pop(MONGO_INDEX_ID)
+
+        if len(raw_index_information) == 0:
+            # only the default _id_ index present (fresh/empty collection)
+            return 0, [], []
 
         index_count = len(raw_index_information)
         index_names = []

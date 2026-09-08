@@ -53,9 +53,7 @@ class bybitFxPricesData(fxPricesData):
         return self._get_cross_rate(currency1, currency2)
 
     def _get_default_fx_prices(self) -> fxPrices:
-        dates = pd.date_range(
-            start="2019-01-01", end=pd.Timestamp.now(), freq="B"
-        )
+        dates = pd.date_range(start="2019-01-01", end=pd.Timestamp.now(), freq="B")
         return fxPrices(pd.Series(1.0, index=dates))
 
     def _get_usd_quote_fx_prices(self, currency: str) -> fxPrices:
@@ -94,9 +92,7 @@ class bybitFxPricesData(fxPricesData):
     def _add_fx_prices_without_checking_for_existing_entry(
         self, code: str, fx_price_data: fxPrices
     ):
-        self.log.info(
-            "ByBit FX prices are fetched from API - nothing to write locally"
-        )
+        self.log.info("ByBit FX prices are fetched from API - nothing to write locally")
 
     def _delete_fx_prices_without_any_warning_be_careful(self, code: str):
         self.log.info(

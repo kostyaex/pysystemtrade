@@ -9,7 +9,9 @@ DEFAULT_BYBIT_SYMBOL_SUFFIX = ":USDT"
 BYBIT_HISTORY_START_MS = 1546300800000  # 2019-01-01
 
 _BYBIT_MODULE_DIR = os.path.dirname(os.path.abspath(__file__))
-BYBIT_DATA_FOLDER = os.path.join(_BYBIT_MODULE_DIR, "..", "..", "data", "futures", "bybit")
+BYBIT_DATA_FOLDER = os.path.join(
+    _BYBIT_MODULE_DIR, "..", "..", "data", "futures", "bybit"
+)
 OHLCV_CACHE_FOLDER = os.path.join(BYBIT_DATA_FOLDER, "ohlcv")
 FUNDING_CACHE_FOLDER = os.path.join(BYBIT_DATA_FOLDER, "funding")
 
@@ -106,6 +108,7 @@ class bybitAPI:
         symbol: str,
         timeframe: str = "1d",
         since=None,
+        use_cache: bool = True,
     ) -> pd.DataFrame:
         """
         Fetch all OHLCV data with pagination, cached locally on disk.
@@ -117,21 +120,25 @@ class bybitAPI:
         :param symbol: trading pair, e.g. 'BTC/USDT:USDT'
         :param timeframe: candle timeframe
         :param since: timestamp in ms to start from. Defaults to 2019-01-01.
+        :param use_cache: if True (default) serve a cached full history if one
+            exists; if False always hit the API. Production data updates MUST
+            pass use_cache=False so that a stale on-disk cache never hides the
+            latest candles. A fresh full-history fetch also refreshes the cache.
         :return: DataFrame with all OHLCV data
         """
         if since is None:
             since = BYBIT_HISTORY_START_MS
 
-        use_cache = timeframe == "1d" and since == BYBIT_HISTORY_START_MS
+        is_full_history = timeframe == "1d" and since == BYBIT_HISTORY_START_MS
 
-        if use_cache:
+        if is_full_history and use_cache:
             cached = self._load_cached_ohlcv(symbol)
             if cached is not None:
                 return cached
 
         result = self._fetch_ohlcv_all_from_api(symbol, timeframe, since)
 
-        if use_cache:
+        if is_full_history:
             self._save_cached_ohlcv(symbol, result)
 
         return result
@@ -170,6 +177,16 @@ class bybitAPI:
     def _save_cached_ohlcv(self, symbol: str, data: pd.DataFrame):
         self._save_cache_folder_file(OHLCV_CACHE_FOLDER, symbol, data)
 
+    def refresh_cached_ohlcv(self, symbol: str, data: pd.DataFrame):
+        """Overwrite the full-history CSV cache for a symbol with the given
+        (complete) DataFrame, keeping backtests in sync with MongoDB data."""
+        self._save_cached_ohlcv(symbol, data)
+
+    def refresh_cached_funding(self, symbol: str, data: pd.DataFrame):
+        """Overwrite the funding CSV cache for a symbol with the given
+        (complete) DataFrame, keeping backtests in sync with MongoDB data."""
+        self._save_cached_funding(symbol, data)
+
     def _load_cached_funding(self, symbol: str):
         return self._load_cache_folder_file(FUNDING_CACHE_FOLDER, symbol)
 
@@ -182,9 +199,7 @@ class bybitAPI:
             return None
         return pd.read_csv(path, index_col=0, parse_dates=True)
 
-    def _save_cache_folder_file(
-        self, folder: str, symbol: str, data: pd.DataFrame
-    ):
+    def _save_cache_folder_file(self, folder: str, symbol: str, data: pd.DataFrame):
         if len(data) == 0:
             return
         path = self._cache_file_path(folder, symbol)
@@ -231,6 +246,7 @@ class bybitAPI:
         self,
         symbol: str,
         since=None,
+        use_cache: bool = True,
     ) -> pd.DataFrame:
         """
         Fetch all available funding rate history from ByBit.
@@ -244,11 +260,19 @@ class bybitAPI:
 
         :param symbol: trading pair
         :param since: if provided, only records at/after this timestamp are kept
+        :param use_cache: if True (default) serve the cached batch if present; if
+            False always hit the API and refresh the cache. Production data
+            updates MUST pass use_cache=False so the latest funding rates are
+            always stored.
         :return: DataFrame with all available funding rate history
         """
-        cached = self._load_cached_funding(symbol)
-        if cached is not None:
-            result = cached
+        if use_cache:
+            cached = self._load_cached_funding(symbol)
+            if cached is not None:
+                result = cached
+            else:
+                result = self._fetch_funding_rate_history_all_from_api(symbol)
+                self._save_cached_funding(symbol, result)
         else:
             result = self._fetch_funding_rate_history_all_from_api(symbol)
             self._save_cached_funding(symbol, result)
