@@ -54,7 +54,54 @@ class bybitAPI:
         exchange = exchange_class(
             {"enableRateLimit": True, "timeout": 60000, "recurse": True}
         )
+
+        api_key = getattr(self, "_api_key", None)
+        api_secret = getattr(self, "_api_secret", None)
+        if not api_key or not api_secret:
+            config_key, config_secret = self._get_api_keys_from_config()
+            api_key = api_key or config_key
+            api_secret = api_secret or config_secret
+
+        if api_key and api_secret:
+            exchange.apiKey = api_key
+            exchange.secret = api_secret
+
         return exchange
+
+    def set_api_keys(self, api_key: str, api_secret: str):
+        """
+        Set private API keys explicitly (overrides keys defined in the private
+        config). Needed for private endpoints such as fetch_positions.
+        """
+        self._api_key = api_key
+        self._api_secret = api_secret
+
+        if self._exchange is not None:
+            self._exchange.apiKey = api_key
+            self._exchange.secret = api_secret
+
+    @staticmethod
+    def _get_api_keys_from_config():
+        """
+        Read ByBit API keys from the production config, under the elements
+        'bybit_api_key' and 'bybit_api_secret' (set in private/private_config.yaml).
+
+        :return: tuple (api_key, api_secret), either may be empty string
+        """
+        try:
+            from sysdata.config.production_config import get_production_config
+        except Exception:
+            return "", ""
+
+        config = get_production_config()
+        api_key = config.get_element_or_default("bybit_api_key", "")
+        api_secret = config.get_element_or_default("bybit_api_secret", "")
+
+        return str(api_key), str(api_secret)
+
+    def check_api_keys_present(self) -> bool:
+        exchange = self.exchange
+        return bool(exchange.apiKey and exchange.secret)
 
     def _fetch_with_retries(self, fetch_call, *args, **kwargs):
         last_exception = None
@@ -331,6 +378,47 @@ class bybitAPI:
         """
         base = symbol.split("/")[0]
         return base + "_BYBIT"
+
+    def fetch_positions(self) -> dict:
+        """
+        Fetch current positions from the ByBit exchange (private endpoint).
+
+        Requires private API keys, configured either via
+        `set_api_keys(api_key, api_secret)` or under 'bybit_api_key' /
+        'bybit_api_secret' in private/private_config.yaml.
+
+        Only USDT-margined linear perpetual positions are returned.
+
+        :return: dict of {instrument_code: signed_coin_qty}, where a positive
+            value is a long position and a negative value a short, in base
+            coins (e.g. 'LINK_BYBIT': 5.2 means long 5.2 LINK).
+        """
+        exchange = self.exchange
+        if not exchange.apiKey or not exchange.secret:
+            raise Exception(
+                "ByBit API keys not configured. Add 'bybit_api_key' and "
+                "'bybit_api_secret' to private/private_config.yaml, or call "
+                "set_api_keys(). See https://www.bybit.com/ account API management."
+            )
+
+        raw_positions = self._fetch_with_retries(exchange.fetch_positions)
+
+        positions = {}
+        for position in raw_positions:
+            symbol = position.get("symbol")
+            if symbol is None or not symbol.endswith(DEFAULT_BYBIT_SYMBOL_SUFFIX):
+                continue
+            contracts = position.get("contracts")
+            if not contracts:
+                continue
+            signed_qty = float(contracts)
+            if position.get("side") == "short":
+                signed_qty = -signed_qty
+
+            instrument_code = self.bybit_symbol_to_instrument_code(symbol)
+            positions[instrument_code] = signed_qty
+
+        return positions
 
     def _empty_ohlcv(self) -> pd.DataFrame:
         return pd.DataFrame(

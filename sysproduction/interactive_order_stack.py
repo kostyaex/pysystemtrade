@@ -20,6 +20,10 @@ from syscore.interactive.menus import (
 from syscore.interactive.display import set_pd_print_options
 
 from sysdata.data_blob import dataBlob
+from sysproduction.data.bybit_positions import (
+    get_bybit_coin_per_block,
+    update_system_positions_from_bybit,
+)
 from sysproduction.data.positions import diagPositions
 from sysproduction.data.optimal_positions import dataOptimalPositions
 from sysproduction.data.broker import dataBroker
@@ -119,6 +123,7 @@ nested_menu_of_options = {
     },
     5: {
         50: "Show recommended ByBit trades (optimal vs current)",
+        51: "Fetch positions from ByBit exchange (update system)",
     },
 }
 
@@ -1009,14 +1014,6 @@ def all_instrument_unlock(data):
 BYBIT_INSTRUMENT_SUFFIX = "_BYBIT"
 
 
-def get_bybit_coin_per_block(instrument_code: str) -> float:
-    from sysdata.csv.csv_instrument_data import csvFuturesInstrumentData
-
-    instrument_data = csvFuturesInstrumentData()
-    meta_data = instrument_data.get_instrument_data(instrument_code).meta_data
-    return float(meta_data.Pointsize)
-
-
 def _required_position_given_buffered(
     optimal_position, current_position: float
 ) -> float:
@@ -1126,6 +1123,28 @@ def view_bybit_recommended_trades(data):
     return None
 
 
+def update_bybit_positions_from_exchange(data):
+    print("\n=== Fetch positions from ByBit exchange ===\n")
+
+    try:
+        positions_blocks = update_system_positions_from_bybit(data)
+    except Exception as e:
+        print("Could not fetch ByBit positions:\n%s" % e)
+        return None
+
+    print(
+        "Positions updated in system (blocks): current exchange position "
+        "reflected in strategy and contract tables.\n"
+    )
+    print("%-12s %8s" % ("Instrument", "Blocks"))
+    for instrument_code, qty_blocks in sorted(positions_blocks.items()):
+        print("%-12s %8d" % (instrument_code, qty_blocks))
+
+    print("\n>>> Re-run option 50 to see recommended trades vs actual positions.")
+
+    return None
+
+
 dict_of_functions = {
     0: order_view,
     1: view_instrument_stack,
@@ -1155,6 +1174,7 @@ dict_of_functions = {
     41: delete_specific_order,
     42: end_of_day,
     50: view_bybit_recommended_trades,
+    51: update_bybit_positions_from_exchange,
 }
 
 
