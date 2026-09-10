@@ -3,6 +3,8 @@ Run overnight backtest of systems to generate optimal positions
 
 """
 
+import logging
+
 from sysdata.data_blob import dataBlob
 
 from syscontrol.run_process import processToRun
@@ -10,6 +12,9 @@ from syscontrol.run_process import processToRun
 from sysproduction.update_system_backtests import process_name, backtest_function
 from syscontrol.strategy_tools import strategyRunner
 from sysproduction.data.control_process import get_list_of_strategies_for_process
+
+logging.getLogger("urllib3").setLevel(logging.WARNING)
+logging.getLogger("ccxt").setLevel(logging.WARNING)
 
 
 def run_systems():

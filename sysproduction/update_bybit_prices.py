@@ -24,6 +24,7 @@ Usage:
 """
 
 import datetime
+import logging
 import sys
 
 from syscore.constants import arg_not_supplied
@@ -35,6 +36,9 @@ from sysdata.mongodb.mongo_bybit_data import (
 )
 from syslogging.logger import *
 import pandas as pd
+
+logging.getLogger("urllib3").setLevel(logging.WARNING)
+logging.getLogger("ccxt").setLevel(logging.WARNING)
 
 DEFAULT_DAYS_BACK_TO_HEAL = 7
 
