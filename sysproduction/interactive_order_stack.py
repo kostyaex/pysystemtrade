@@ -21,6 +21,7 @@ from syscore.interactive.display import set_pd_print_options
 
 from sysdata.data_blob import dataBlob
 from sysproduction.data.bybit_positions import update_system_positions_from_bybit
+from sysproduction.data.bybit_orders import execute_bybit_trades
 from sysproduction.report_bybit_recommended_trades import bybit_recommended_trades_table
 from sysproduction.data.positions import diagPositions
 from sysproduction.data.optimal_positions import dataOptimalPositions
@@ -122,6 +123,7 @@ nested_menu_of_options = {
     5: {
         50: "Show recommended ByBit trades (optimal vs current)",
         51: "Fetch positions from ByBit exchange (update system)",
+        52: "Execute ByBit trades (review -> confirm -> execute, market or limit)",
     },
 }
 
@@ -1091,6 +1093,7 @@ dict_of_functions = {
     42: end_of_day,
     50: view_bybit_recommended_trades,
     51: update_bybit_positions_from_exchange,
+    52: execute_bybit_trades,
 }
 
 

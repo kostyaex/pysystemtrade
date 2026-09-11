@@ -420,6 +420,172 @@ class bybitAPI:
 
         return positions
 
+    def _check_private_api_keys(self):
+        """
+        Ensure private API keys are configured and return the exchange object.
+
+        :raises Exception: if keys are not configured
+        :return: ccxt exchange instance
+        """
+        exchange = self.exchange
+        if not exchange.apiKey or not exchange.secret:
+            raise Exception(
+                "ByBit API keys not configured. Add 'bybit_api_key' and "
+                "'bybit_api_secret' to private/private_config.yaml, or call "
+                "set_api_keys(). See https://www.bybit.com/ account API management."
+            )
+        return exchange
+
+    def fetch_ticker(self, symbol: str) -> dict:
+        """
+        Fetch the current ticker for a symbol (public endpoint).
+
+        :param symbol: trading pair, e.g. 'BTC/USDT:USDT'
+        :return: ccxt ticker dict with keys last, bid, ask, etc.
+        """
+        ticker = self._fetch_with_retries(self.exchange.fetch_ticker, symbol)
+        if ticker is None:
+            raise Exception("No ticker returned for %s" % symbol)
+
+        return ticker
+
+    def get_amount_precision(self, symbol: str, amount: float) -> float:
+        """
+        Round an order quantity to the exchange's accepted precision.
+
+        :param symbol: trading pair, e.g. 'BTC/USDT:USDT'
+        :param amount: raw base-coin quantity
+        :return: quantity rounded to the exchange's step size
+        """
+        self._load_markets()
+        precise = self.exchange.amount_to_precision(symbol, amount)
+        return float(precise)
+
+    def get_min_order_amount(self, symbol: str) -> float:
+        """
+        Minimum order quantity accepted by the exchange for a symbol.
+
+        :param symbol: trading pair, e.g. 'BTC/USDT:USDT'
+        :return: minimum base-coin quantity, or 0 if unknown
+        """
+        self._load_markets()
+        market = self.exchange.market(symbol)
+        min_amount = market.get("limits", {}).get("amount", {}).get("min")
+        if min_amount is None:
+            return 0.0
+        return float(min_amount)
+
+    def _load_markets(self):
+        self.exchange.load_markets()
+
+    def create_market_order(self, symbol: str, side: str, amount: float) -> dict:
+        """
+        Place a market order on ByBit (private endpoint).
+
+        :param symbol: trading pair, e.g. 'BTC/USDT:USDT'
+        :param side: 'buy' or 'sell'
+        :param amount: base-coin quantity, e.g. 0.001 BTC
+        :return: unified ccxt order dict
+        """
+        self._check_private_api_keys()
+        amount = self.get_amount_precision(symbol, amount)
+        if amount <= 0:
+            raise Exception("Invalid order amount for %s: %s" % (symbol, amount))
+
+        order = self._fetch_with_retries(
+            self.exchange.create_market_order, symbol, side, amount
+        )
+        self.log.info(
+            "ByBit market order placed: %s %s amount=%s"
+            % (symbol, side.upper(), amount)
+        )
+        return order
+
+    def create_limit_order(
+        self, symbol: str, side: str, amount: float, price: float
+    ) -> dict:
+        """
+        Place a limit order on ByBit (private endpoint).
+
+        :param symbol: trading pair, e.g. 'BTC/USDT:USDT'
+        :param side: 'buy' or 'sell'
+        :param amount: base-coin quantity, e.g. 0.001 BTC
+        :param price: limit price in quote currency (USDT)
+        :return: unified ccxt order dict
+        """
+        self._check_private_api_keys()
+        amount = self.get_amount_precision(symbol, amount)
+        if amount <= 0:
+            raise Exception("Invalid order amount for %s: %s" % (symbol, amount))
+        if price <= 0:
+            raise Exception("Invalid limit price for %s: %s" % (symbol, price))
+
+        order = self._fetch_with_retries(
+            self.exchange.create_limit_order, symbol, side, amount, price
+        )
+        self.log.info(
+            "ByBit limit order placed: %s %s amount=%s price=%s"
+            % (symbol, side.upper(), amount, price)
+        )
+        return order
+
+    def fetch_open_orders(self, symbol: str = None) -> list:
+        """
+        Fetch open orders from the exchange (private endpoint).
+
+        :param symbol: trading pair, or None for all symbols
+        :return: list of unified ccxt order dicts
+        """
+        self._check_private_api_keys()
+        return self._fetch_with_retries(self.exchange.fetch_open_orders, symbol)
+
+    def fetch_order(self, order_id: str, symbol: str = None) -> dict:
+        """
+        Fetch a single order's current state from the exchange (private
+        endpoint). Used after placement to confirm fills / status.
+
+        ByBit's unified-account fetchOrder() (v5/order/realtime) only serves
+        orders from the last 500, and ccxt raises unless params['acknowledged']
+        is True. We pass it so recently placed orders can always be fetched.
+
+        :param order_id: exchange order id
+        :param symbol: trading pair, or None
+        :return: unified ccxt order dict
+        """
+        self._check_private_api_keys()
+        params = {"acknowledged": True}
+        return self._fetch_with_retries(
+            self.exchange.fetch_order, order_id, symbol, params
+        )
+
+    def fetch_closed_order(self, order_id: str, symbol: str = None) -> dict:
+        """
+        Fetch a filled/cancelled order's state (private endpoint). Used as an
+        alternative to fetch_order when the order may no longer be in the
+        exchange's recent-order window.
+
+        :param order_id: exchange order id
+        :param symbol: trading pair, or None
+        :return: unified ccxt order dict
+        """
+        self._check_private_api_keys()
+        return self._fetch_with_retries(
+            self.exchange.fetch_closed_order, order_id, symbol
+        )
+
+    def cancel_order(self, order_id: str, symbol: str) -> dict:
+        """
+        Cancel an order on the exchange (private endpoint).
+
+        :param order_id: exchange order id
+        :param symbol: trading pair, e.g. 'BTC/USDT:USDT'
+        :return: unified ccxt order dict
+        """
+        self._check_private_api_keys()
+        result = self._fetch_with_retries(self.exchange.cancel_order, order_id, symbol)
+        self.log.info("ByBit order cancelled: %s %s" % (symbol, order_id))
+        return result
+
     def _empty_ohlcv(self) -> pd.DataFrame:
         return pd.DataFrame(
             columns=["OPEN", "HIGH", "LOW", "FINAL", "VOLUME"]
