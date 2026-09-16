@@ -344,28 +344,6 @@ def refresh_order_fill_details(
     # keep the fill fields from the original response
     return order
 
-    order_id = order.get("id")
-    symbol = order.get("symbol")
-    if not order_id:
-        return order
-
-    try:
-        refreshed = api.fetch_order(order_id, symbol)
-    except Exception:
-        return order
-
-    if refreshed is None:
-        return order
-
-    if (
-        float(refreshed.get("filled") or 0.0) > 0
-        or float(refreshed.get("average") or 0.0) > 0
-    ):
-        return refreshed
-
-    # keep the postion info but leave fill fields from the original response
-    return order
-
 
 def filled_blocks_for_result(result: dict) -> int:
     """

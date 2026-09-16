@@ -461,6 +461,35 @@ class bybitAPI:
         precise = self.exchange.amount_to_precision(symbol, amount)
         return float(precise)
 
+    def get_price_precision(self, symbol: str, price: float) -> float:
+        """
+        Round an order price to the exchange's accepted tick size.
+
+        :param symbol: trading pair, e.g. 'BTC/USDT:USDT'
+        :param price: raw quote-currency price
+        :return: price rounded to the exchange's tick size
+        """
+        self._load_markets()
+        precise = self.exchange.price_to_precision(symbol, price)
+        return float(precise)
+
+    def fetch_order_book(self, symbol: str, limit: int = 10) -> dict:
+        """
+        Fetch the current order book for a symbol (public endpoint).
+
+        :param symbol: trading pair, e.g. 'BTC/USDT:USDT'
+        :param limit: number of price levels to request
+        :return: ccxt order book dict with 'bids' and 'asks' as
+            [[price, size], ...] sorted best first
+        """
+        order_book = self._fetch_with_retries(
+            self.exchange.fetch_order_book, symbol, limit
+        )
+        if order_book is None:
+            raise Exception("No order book returned for %s" % symbol)
+
+        return order_book
+
     def get_min_order_amount(self, symbol: str) -> float:
         """
         Minimum order quantity accepted by the exchange for a symbol.
