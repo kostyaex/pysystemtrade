@@ -1,0 +1,10 @@
+[Unit]
+Description=pysystemtrade ByBit recommended-trade report - daily kick
+
+[Timer]
+OnCalendar=*-*-* 08:25:00
+Persistent=true
+RandomizedDelaySec=0
+
+[Install]
+WantedBy=timers.target

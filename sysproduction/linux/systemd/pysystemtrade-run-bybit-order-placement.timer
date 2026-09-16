@@ -1,0 +1,10 @@
+[Unit]
+Description=pysystemtrade ByBit order placement daemon - daily kick
+
+[Timer]
+OnCalendar=*-*-* 08:20:00
+Persistent=true
+RandomizedDelaySec=0
+
+[Install]
+WantedBy=timers.target

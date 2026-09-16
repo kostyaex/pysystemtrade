@@ -10,6 +10,11 @@ process_configuration_start_time:
   run_backups: '20:15'
   run_cleaners: '20:20'
   run_reports: '20:25'
+  ## ByBit daily processes
+  run_bybit_price_updates: '08:00'
+  run_bybit_position_sync: '08:20'
+  run_bybit_trade_report: '08:25'
+  run_bybit_cache_export: '08:30'
 process_configuration_stop_time:
   default: '23:50'
   run_strategy_order_generator: '23:50'
@@ -22,6 +27,11 @@ process_configuration_stop_time:
   run_backups: '23:50'
   run_cleaners: '23:50'
   run_reports: '23:50'
+  ## ByBit daily processes
+  run_bybit_price_updates: '23:50'
+  run_bybit_position_sync: '23:50'
+  run_bybit_trade_report: '23:50'
+  run_bybit_cache_export: '23:50'
 ## Examples of passing arguments
 #arguments:
 #  run_daily_prices_updates:
@@ -39,6 +49,13 @@ process_configuration_stop_time:
 #  run_cleaners: 'run_strategy_order_generator'
 #  run_backups: 'run_cleaners'
 #  run_reports: 'run_strategy_order_generator'
+# ByBit daily chain: price updates -> backtest -> positions -> trade report
+# The run_systems / run_bybit_order_placement edges live in private control
+# config as those processes are defined there (see private_control_config.yaml)
+process_configuration_previous_process:
+  run_bybit_position_sync: 'run_systems'
+  run_bybit_trade_report: 'run_bybit_position_sync'
+  run_bybit_cache_export: 'run_systems'
 # we include every method to make process monitoring easier
 process_configuration_methods:
   run_capital_update:
@@ -130,6 +147,23 @@ process_configuration_methods:
     clean_echo_files:
       max_executions: 1
     clean_log_files:
+      max_executions: 1
+  ## ByBit daily processes: each runs its single method once then finishes
+  run_bybit_price_updates:
+    update_bybit_prices:
+      frequency: 0
+      max_executions: 1
+  run_bybit_position_sync:
+    update_system_positions:
+      frequency: 0
+      max_executions: 1
+  run_bybit_trade_report:
+    report_trades:
+      frequency: 0
+      max_executions: 1
+  run_bybit_cache_export:
+    export_cache:
+      frequency: 0
       max_executions: 1
 # You need to create an entry in private control config that looks like this for each strategy
 #process_configuration_methods:

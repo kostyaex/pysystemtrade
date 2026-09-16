@@ -1,0 +1,13 @@
+[Unit]
+Description=pysystemtrade overnight system backtest (run_systems)
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=oneshot
+User=kostya
+WorkingDirectory=/home/kostya/projects/pysystemtrade
+EnvironmentFile=-/home/kostya/.config/pysystemtrade-environment
+Restart=on-failure
+RestartSec=60
+ExecStart=/home/kostya/projects/pysystemtrade/.venv/bin/python -m sysproduction.run_systems

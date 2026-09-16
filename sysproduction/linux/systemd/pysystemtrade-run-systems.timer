@@ -1,0 +1,10 @@
+[Unit]
+Description=pysystemtrade overnight system backtest - daily kick
+
+[Timer]
+OnCalendar=*-*-* 08:10:00
+Persistent=true
+RandomizedDelaySec=0
+
+[Install]
+WantedBy=timers.target

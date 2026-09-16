@@ -1,0 +1,10 @@
+[Unit]
+Description=pysystemtrade ByBit daily price update - daily kick
+
+[Timer]
+OnCalendar=*-*-* 08:00:00
+Persistent=true
+RandomizedDelaySec=0
+
+[Install]
+WantedBy=timers.target
