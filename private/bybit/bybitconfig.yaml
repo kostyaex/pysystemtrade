@@ -5,7 +5,7 @@
 # Volatility target: 15% annual (conservative)
 # Instruments: only ByBit USDT perpetuals (codes ending _BYBIT)
 #
-percentage_vol_target: 15.0
+percentage_vol_target: 25.0
 notional_trading_capital: 1000
 base_currency: "USD"
 
